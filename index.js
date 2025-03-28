@@ -12,15 +12,16 @@ const PORT = process.env.PORT || 5000
 
 dotenv.config();
 
-app.use(express.json({ limit: '10mb' }))
-
-// CORS Configuration
+// Configure CORS
 app.use(cors({
-    origin: ['https://shopcart-tan.vercel.app', 'http://localhost:3001'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: ['http://localhost:3001', 'http://localhost:3000', 'https://shopcart-tan.vercel.app'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization']
+    optionsSuccessStatus: 200
 }));
+
+app.use(express.json({ limit: '10mb' }))
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
