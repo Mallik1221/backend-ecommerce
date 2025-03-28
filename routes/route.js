@@ -1,0 +1,90 @@
+const router = require('express').Router();
+const authMiddleware = require('../middleware/authMiddleware.js');
+const upload = require('../utils/multerConfig.js');
+
+const {
+    sellerRegister,
+    sellerLogIn
+} = require('../controllers/sellerController.js');
+
+const {
+    productCreate,
+    getProducts,
+    getProductDetail,
+    searchProduct,
+    searchProductbyCategory,
+    searchProductbySubCategory,
+    getSellerProducts,
+    updateProduct,
+    deleteProduct,
+    deleteProducts,
+    deleteProductReview,
+    deleteAllProductReviews,
+    addReview,
+    getInterestedCustomers,
+    getAddedToCartProducts,
+} = require('../controllers/productController.js');
+
+const {
+    customerRegister,
+    customerLogIn,
+    getCartDetail,
+    cartUpdate
+} = require('../controllers/customerController.js');
+
+const {
+    newOrder,
+    getOrderedProductsByCustomer,
+    getOrderedProductsBySeller
+} = require('../controllers/orderController.js');
+
+
+// Seller
+router.post('/SellerRegister', sellerRegister);
+router.post('/SellerLogin', sellerLogIn);
+
+// Product
+router.post('/ProductCreate', productCreate);
+router.get('/getSellerProducts/:id', getSellerProducts);
+router.get('/getProducts', getProducts);
+router.get('/getProductDetail/:id', getProductDetail);
+router.get('/getInterestedCustomers/:id', getInterestedCustomers);
+router.get('/getAddedToCartProducts/:id', getAddedToCartProducts);
+
+router.put('/ProductUpdate/:id', updateProduct);
+router.put('/addReview/:id', addReview);
+
+router.get('/searchProduct/:key', searchProduct);
+router.get('/searchProductbyCategory/:key', searchProductbyCategory);
+router.get('/searchProductbySubCategory/:key', searchProductbySubCategory);
+
+router.delete('/DeleteProduct/:id', deleteProduct);
+router.delete('/DeleteProducts/:id', deleteProducts);
+router.put('/deleteProductReview/:id', deleteProductReview);
+router.delete('/deleteAllProductReviews/:id', deleteAllProductReviews);
+
+// Customer
+router.post('/CustomerRegister', customerRegister);
+router.post('/CustomerLogin', customerLogIn);
+router.get('/getCartDetail/:id', getCartDetail);
+router.put('/CustomerUpdate/:id', cartUpdate);
+
+// Order
+router.post('/newOrder', newOrder);
+router.get('/getOrderedProductsByCustomer/:id', getOrderedProductsByCustomer);
+router.get('/getOrderedProductsBySeller/:id', getOrderedProductsBySeller);
+
+// File upload route
+router.post('/upload', upload.single('image'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+        const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+        res.json({ imageUrl });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+module.exports = router;
