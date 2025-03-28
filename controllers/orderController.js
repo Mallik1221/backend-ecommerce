@@ -116,31 +116,60 @@ const getOrdersByStatus = async (req, res) => {
     try {
         const { sellerId, status } = req.params;
         
+        console.log("Fetching orders for sellerId:", sellerId, "status:", status);
+
         const orders = await Order.find({
             'orderedProducts.seller': sellerId,
             orderStatus: status
+        }).populate({
+            path: 'buyer',
+            select: 'name email'
         });
 
-        if (orders.length > 0) {
-            const orderedProducts = orders.reduce((accumulator, order) => {
-                order.orderedProducts.forEach(product => {
-                    if (product.seller.toString() === sellerId) {
-                        const existingProductIndex = accumulator.findIndex(p => p._id.toString() === product._id.toString());
-                        if (existingProductIndex !== -1) {
-                            accumulator[existingProductIndex].quantity += product.quantity;
-                        } else {
-                            accumulator.push(product);
-                        }
-                    }
-                });
-                return accumulator;
-            }, []);
-            res.send(orderedProducts);
-        } else {
-            res.send({ message: "No products found" });
+        console.log("Found orders:", orders);
+
+        if (!orders || orders.length === 0) {
+            return res.send({ message: "No products found" });
         }
+
+        const orderedProducts = [];
+        
+        for (const order of orders) {
+            if (!order.orderedProducts) continue;
+
+            for (const product of order.orderedProducts) {
+                if (product.seller && product.seller.toString() === sellerId) {
+                    try {
+                        const productData = {
+                            productName: product.productName,
+                            quantity: product.quantity || 0,
+                            price: product.price || {},
+                            customerName: order.buyer ? order.buyer.name : 'N/A',
+                            address: order.shippingData ? 
+                                `${order.shippingData.address || ''}, ${order.shippingData.city || ''}, ${order.shippingData.state || ''} - ${order.shippingData.pinCode || ''}`.trim() : 
+                                'N/A',
+                            orderId: order._id,
+                            orderStatus: order.orderStatus,
+                            orderedAt: order.createdAt
+                        };
+                        orderedProducts.push(productData);
+                    } catch (err) {
+                        console.error("Error processing product:", err);
+                        continue;
+                    }
+                }
+            }
+        }
+
+        console.log("Processed products:", orderedProducts);
+        res.send(orderedProducts);
+        
     } catch (err) {
-        res.status(500).json(err);
+        console.error("Error in getOrdersByStatus:", err);
+        res.status(500).json({ 
+            message: "Error fetching orders", 
+            error: err.message 
+        });
     }
 };
 
