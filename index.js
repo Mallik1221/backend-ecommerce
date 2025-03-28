@@ -49,7 +49,7 @@ app.use(express.json({ limit: '10mb' }))
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+    cb(null, uploadsDir); // Use the absolute path
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -72,26 +72,53 @@ const upload = multer({
 });
 
 // Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(uploadsDir));
 
 // Upload endpoint
-app.post('/upload', upload.single('image'), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
+app.post('/upload', (req, res, next) => {
+  console.log('Upload request received');
+  console.log('Headers:', req.headers);
+  
+  upload.single('image')(req, res, function(err) {
+    if (err instanceof multer.MulterError) {
+      console.error('Multer error:', err);
+      return res.status(400).json({
+        message: 'File upload error',
+        error: err.message
+      });
+    } else if (err) {
+      console.error('Unknown error:', err);
+      return res.status(500).json({
+        message: 'Unknown error occurred during upload',
+        error: err.message
+      });
     }
-    
-    // Get the base URL from request or environment variable
-    const baseURL = process.env.NODE_ENV === 'production' 
-      ? 'https://backend-ecommerce-new.onrender.com'
-      : `http://localhost:${process.env.PORT || 5000}`;
+
+    try {
+      if (!req.file) {
+        console.error('No file received');
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      console.log('File received:', req.file);
       
-    const imageUrl = `${baseURL}/uploads/${req.file.filename}`;
-    res.json({ imageUrl });
-  } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ message: 'Error uploading file' });
-  }
+      // Get the base URL from request or environment variable
+      const baseURL = process.env.NODE_ENV === 'production' 
+        ? 'https://backend-ecommerce-new.onrender.com'
+        : `http://localhost:${process.env.PORT || 5000}`;
+        
+      const imageUrl = `${baseURL}/uploads/${req.file.filename}`;
+      console.log('Generated image URL:', imageUrl);
+      
+      res.json({ imageUrl });
+    } catch (error) {
+      console.error('Processing error:', error);
+      res.status(500).json({ 
+        message: 'Error processing uploaded file',
+        error: error.message 
+      });
+    }
+  });
 });
 
 // MongoDB Connection
