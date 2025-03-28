@@ -13,8 +13,24 @@ const PORT = process.env.PORT || 5000
 dotenv.config();
 
 // Configure CORS
+const allowedOrigins = [
+    'http://localhost:3001',
+    'http://localhost:3000',
+    'https://shopcart-tan.vercel.app',
+    'https://backend-ecommerce-new.onrender.com'
+];
+
 app.use(cors({
-    origin: ['http://localhost:3001', 'http://localhost:3000', 'https://shopcart-tan.vercel.app'],
+    origin: function(origin, callback) {
+        // allow requests with no origin (like mobile apps or curl requests)
+        if(!origin) return callback(null, true);
+        
+        if(allowedOrigins.indexOf(origin) === -1){
+            var msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -65,16 +81,36 @@ app.post('/upload', upload.single('image'), (req, res) => {
   }
 });
 
+// MongoDB Connection
+if (!process.env.MONGO_URL) {
+    console.error("MONGO_URL is not set in environment variables");
+    process.exit(1);
+}
+
 mongoose
     .connect(process.env.MONGO_URL, {
         useNewUrlParser: true,
         useUnifiedTopology: true
     })
-    .then(console.log("Connected to MongoDB"))
-    .catch((err) => console.log("NOT CONNECTED TO NETWORK", err))
+    .then(() => {
+        console.log("Connected to MongoDB");
+        app.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
+        });
+    })
+    .catch((err) => {
+        console.error("MongoDB Connection Error:", err);
+        process.exit(1);
+    });
+
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({
+        message: "Internal Server Error",
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined,
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
+});
 
 app.use('/', Routes);
-
-app.listen(PORT, () => {
-    console.log(`Server started at port no. ${PORT}`)
-})

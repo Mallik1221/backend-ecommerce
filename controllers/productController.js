@@ -15,14 +15,22 @@ const productCreate = async (req, res) => {
 
 const getProducts = async (req, res) => {
     try {
+        console.log("Fetching all products...");
         let products = await Product.find().populate("seller", "shopName");
+        console.log("Products found:", products.length);
+        
         if (products.length > 0) {
             res.send(products);
         } else {
             res.send({ message: "No products found" });
         }
     } catch (err) {
-        res.status(500).json(err);
+        console.error("Error in getProducts:", err);
+        res.status(500).json({
+            message: "Error fetching products",
+            error: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
     }
 };
 
