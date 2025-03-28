@@ -35,7 +35,9 @@ const {
 const {
     newOrder,
     getOrderedProductsByCustomer,
-    getOrderedProductsBySeller
+    getOrderedProductsBySeller,
+    updateOrderStatus,
+    getOrdersByStatus
 } = require('../controllers/orderController.js');
 
 
@@ -73,6 +75,8 @@ router.put('/CustomerUpdate/:id', cartUpdate);
 router.post('/newOrder', newOrder);
 router.get('/getOrderedProductsByCustomer/:id', getOrderedProductsByCustomer);
 router.get('/getOrderedProductsBySeller/:id', getOrderedProductsBySeller);
+router.get('/getOrdersByStatus/:sellerId/:status', getOrdersByStatus);
+router.put('/updateOrderStatus', updateOrderStatus);
 
 // File upload route
 router.post('/upload', upload.single('image'), (req, res) => {
