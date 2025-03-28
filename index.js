@@ -4,6 +4,7 @@ const mongoose = require("mongoose")
 const dotenv = require("dotenv")
 const path = require("path")
 const multer = require('multer')
+const fs = require('fs')
 
 const app = express()
 const Routes = require("./routes/route.js")
@@ -11,6 +12,12 @@ const Routes = require("./routes/route.js")
 const PORT = process.env.PORT || 5000
 
 dotenv.config();
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)){
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Configure CORS
 const allowedOrigins = [
@@ -73,7 +80,13 @@ app.post('/upload', upload.single('image'), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
-    const imageUrl = `http://localhost:${process.env.PORT || 5000}/uploads/${req.file.filename}`;
+    
+    // Get the base URL from request or environment variable
+    const baseURL = process.env.NODE_ENV === 'production' 
+      ? 'https://backend-ecommerce-new.onrender.com'
+      : `http://localhost:${process.env.PORT || 5000}`;
+      
+    const imageUrl = `${baseURL}/uploads/${req.file.filename}`;
     res.json({ imageUrl });
   } catch (error) {
     console.error('Upload error:', error);
