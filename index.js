@@ -50,7 +50,7 @@ app.use(express.json({ limit: '10mb' }))
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, uploadsDir); // Use the absolute path
+    cb(null, uploadsDir);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -76,73 +76,23 @@ const upload = multer({
 app.use('/uploads', express.static(uploadsDir));
 
 // Upload endpoint
-app.post('/upload', (req, res, next) => {
-  console.log('Upload request received');
-  
-  if (process.env.NODE_ENV === 'production') {
-    // Handle Base64 upload for production
-    const { image } = req.body;
-    if (!image) {
-      console.error('No image data received in production');
-      return res.status(400).json({ message: 'No image data received' });
+app.post('/upload', upload.single('image'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    try {
-      // Validate Base64 string
-      if (!image.startsWith('data:image/')) {
-        console.error('Invalid image format');
-        return res.status(400).json({ message: 'Invalid image format. Must be a valid Base64 image.' });
-      }
-
-      // The image URL will be the Base64 string itself
-      const imageUrl = image;
-      console.log('Image uploaded successfully in production mode');
-      res.json({ imageUrl });
-    } catch (error) {
-      console.error('Processing error in production:', error);
-      res.status(500).json({ 
-        message: 'Error processing image',
-        error: error.message 
-      });
-    }
-  } else {
-    // Handle file upload for development
-    upload.single('image')(req, res, function(err) {
-      if (err instanceof multer.MulterError) {
-        console.error('Multer error:', err);
-        return res.status(400).json({
-          message: 'File upload error',
-          error: err.message
-        });
-      } else if (err) {
-        console.error('Unknown error:', err);
-        return res.status(500).json({
-          message: 'Unknown error occurred during upload',
-          error: err.message
-        });
-      }
-
-      try {
-        if (!req.file) {
-          console.error('No file received in development');
-          return res.status(400).json({ message: 'No file uploaded' });
-        }
-
-        console.log('File received:', req.file);
-        const baseURL = process.env.NODE_ENV === 'production'
-          ? 'https://backend-ecommerce-new.onrender.com'
-          : `http://localhost:${process.env.PORT || 5000}`;
-        const imageUrl = `${baseURL}/uploads/${req.file.filename}`;
-        console.log('Generated image URL:', imageUrl);
-        
-        res.json({ imageUrl });
-      } catch (error) {
-        console.error('Processing error in development:', error);
-        res.status(500).json({ 
-          message: 'Error processing uploaded file',
-          error: error.message 
-        });
-      }
+    const baseURL = process.env.NODE_ENV === 'production'
+      ? 'https://backend-ecommerce-new.onrender.com'
+      : `http://localhost:${process.env.PORT || 5000}`;
+    
+    const imageUrl = `${baseURL}/uploads/${req.file.filename}`;
+    res.json({ imageUrl });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ 
+      message: 'Error processing uploaded file',
+      error: error.message 
     });
   }
 });
