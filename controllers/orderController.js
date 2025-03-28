@@ -66,14 +66,18 @@ const getOrderedProductsBySeller = async (req, res) => {
             const orderedProducts = ordersWithSellerId.reduce((accumulator, order) => {
                 order.orderedProducts.forEach(product => {
                     if (product.seller.toString() === sellerId) {
-                        // Add each product with its order details
-                        accumulator.push({
-                            ...product.toObject(),
-                            orderId: order._id,
-                            orderStatus: order.orderStatus,
-                            buyerInfo: order.shippingData,
-                            orderedAt: order.createdAt
-                        });
+                        const existingProductIndex = accumulator.findIndex(p => p._id.toString() === product._id.toString());
+                        if (existingProductIndex !== -1) {
+                            // If product already exists, merge quantities
+                            accumulator[existingProductIndex].quantity += product.quantity;
+                        } else {
+                            // If product doesn't exist, add it to accumulator with order details
+                            accumulator.push({
+                                ...product.toObject(),
+                                orderId: order._id,
+                                orderStatus: order.orderStatus
+                            });
+                        }
                     }
                 });
                 return accumulator;
@@ -121,13 +125,12 @@ const getOrdersByStatus = async (req, res) => {
             const orderedProducts = orders.reduce((accumulator, order) => {
                 order.orderedProducts.forEach(product => {
                     if (product.seller.toString() === sellerId) {
-                        accumulator.push({
-                            ...product.toObject(),
-                            orderId: order._id,
-                            orderStatus: order.orderStatus,
-                            buyerInfo: order.shippingData,
-                            orderedAt: order.createdAt
-                        });
+                        const existingProductIndex = accumulator.findIndex(p => p._id.toString() === product._id.toString());
+                        if (existingProductIndex !== -1) {
+                            accumulator[existingProductIndex].quantity += product.quantity;
+                        } else {
+                            accumulator.push(product);
+                        }
                     }
                 });
                 return accumulator;
